@@ -9,12 +9,12 @@ Develop the web frontend to get Users from Github.
 - Get users from Github with rest api
 - Render user list
 - View detail when click on any item
-- Store in local storage
+- Store in indexedDB
 
   
 ## Setup invironment
 
-Install Nodejs on your pc 
+Install Nodejs on your pc (Mac, Window, Linux)
 
 [Download NodeJS](https://nodejs.org/en/)
 
@@ -70,7 +70,10 @@ createApp(App)
 .mount("#app");
 ```
 
-
+Install IndexedDB
+```bash
+npm install idb
+```
 
 Install Axios
 ```bash
@@ -91,41 +94,111 @@ npm install axios
 
 Project structure
 
-![App Screenshot](https://firebasestorage.googleapis.com/v0/b/task-force-45e4e.appspot.com/o/Screen%20Shot%202021-07-19%20at%2011.21.49%20PM.png?alt=media&token=8ff35def-efe9-4a2a-b684-95fe02dde2cc)
+![App Screenshot](https://firebasestorage.googleapis.com/v0/b/task-force-45e4e.appspot.com/o/screens%2FScreen%20Shot%202021-07-22%20at%201.07.13%20PM.png?alt=media&token=846ec903-9cf6-4ae3-a231-96abf2f01341)
 
-**App.vue** is the main UI. It include **UserList** from the pages
+## Configure **HTTP Request**
+Create **Axios** configuration `/service/apiClient.ts`
+```javascript
+import axios, { AxiosInstance } from "axios";
+import config from "../utils/config";
+const apiClient: AxiosInstance = axios.create({
+  baseURL: config.url,
+  headers: {
+    "Content-type": "application/json",
+    "Authorization":"token "+config.token
+  },
+});
 
-![App Screenshot](https://firebasestorage.googleapis.com/v0/b/task-force-45e4e.appspot.com/o/Screen%20Shot%202021-07-19%20at%2011.25.31%20PM.png?alt=media&token=49fafbf7-5781-420a-a3df-c217983bc86c)
+export default apiClient;
+```
 
-**pages/UserList.vue** this file use to render view and function to do action with data.
+Create **Api** configuration `/service/Apis.ts`
+```javascript
+import http from "./apiClient";
+class Apis {
+  getAll(): Promise<any> {
+    return http.get("/users?per_page=20");
+  }
+  get(uri: string): Promise<any> {
+    return http.get(uri);
+  }
+}
+export default new Apis();
+```
 
-![App Screenshot](https://firebasestorage.googleapis.com/v0/b/task-force-45e4e.appspot.com/o/Screen%20Shot%202021-07-19%20at%2011.26.47%20PM.png?alt=media&token=5019b755-9c72-4fac-a91d-39958b85f08f)
+## Configure **Views**
+Create **UserList** for parent Component `/pages/UserList.vue`
+```javascript
+<script lang="ts">
+import { computed, defineComponent, onMounted } from "vue";
+import TableView from "@/components/TableView.vue";
+import { useStore } from "@/store";
+import { ActionTypes } from "@/store/actions";
+export default defineComponent({
+  components: { TableView },
+  setup() {
+    const store = useStore();
+    const loading = computed(() => store.state.loading);
+    onMounted(() => store.dispatch(ActionTypes.GetUsers));
+    return { loading };
+  },
+});
+</script>
+<template>
+  <h3>Users List</h3>
+  <div class="container mx-auto mt-4">
+    <div v-if="loading" class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <div v-if="!loading">
+    <TableView />
+    </div>
+  </div>
+</template>
+```
+This stage it will do action get data from github, and store in globle state
 
-**compoments/Modal.vue** it is the compoment to render Modal to view detail of User
+**TableView.vue** and **Modal.vue** is the child compoments imported from **UserList**
 
-![App Screenshot](https://firebasestorage.googleapis.com/v0/b/task-force-45e4e.appspot.com/o/Screen%20Shot%202021-07-19%20at%2011.39.21%20PM.png?alt=media&token=80d78d32-2dab-4e15-b5bb-9a3ce0a1746d)
-
-**services/apiClient.ts** it is the configuration of http client (axios)
-
-![App Screenshot](https://firebasestorage.googleapis.com/v0/b/task-force-45e4e.appspot.com/o/Screen%20Shot%202021-07-19%20at%2011.39.40%20PM.png?alt=media&token=70ed45e7-2625-4e17-b1fd-2ac6c0c53740)
-
-**services/Apis.ts** it is the functions to get data from api
-
-![App Screenshot](https://firebasestorage.googleapis.com/v0/b/task-force-45e4e.appspot.com/o/Screen%20Shot%202021-07-19%20at%2011.39.46%20PM.png?alt=media&token=c878a6e6-ccb2-4141-a1b5-ae36c673fc66)
-
-**types/Response.ts** it is the model or template of response data
-
-![App Screenshot](https://firebasestorage.googleapis.com/v0/b/task-force-45e4e.appspot.com/o/Screen%20Shot%202021-07-19%20at%2011.40.04%20PM.png?alt=media&token=9df8c8b6-324d-4600-9967-3c7792c2c759)
-
-**types/User.ts** it is the model or template of User
-
-![App Screenshot](https://firebasestorage.googleapis.com/v0/b/task-force-45e4e.appspot.com/o/Screen%20Shot%202021-07-19%20at%2011.40.09%20PM.png?alt=media&token=68e3827c-a371-4211-974a-7ffb5a9adb85)
-
-**utils/config.ts** it is the configuration file to store local config variable 
-
-![App Screenshot](https://firebasestorage.googleapis.com/v0/b/task-force-45e4e.appspot.com/o/Screen%20Shot%202021-07-19%20at%2011.40.19%20PM.png?alt=media&token=74936514-12a1-4970-872c-ba1e8e165078)
+![App Screenshot](https://firebasestorage.googleapis.com/v0/b/task-force-45e4e.appspot.com/o/screens%2FScreen%20Shot%202021-07-22%20at%201.37.40%20PM.png?alt=media&token=87c47b51-8011-4115-b392-dda3574892a7)
 
 
+## Configure IndexedDB
+
+Create **Mothods** to do operation with DB `/service/indexedDB.ts`
+```javascript
+import { openDB } from 'idb';
+const dbPromise = openDB('user-store', 1, {
+  upgrade(db) {
+    db.createObjectStore('users');
+  },
+});
+class indexedDB {
+    async get(key: string): Promise<any> {
+        return (await dbPromise).get('users', key);
+    }
+    async set(key: string,val: any): Promise<any> {
+        return (await dbPromise).put('users', val, key);
+    }
+    async delete(key: string): Promise<any> {
+        return (await dbPromise).get('users', key);
+    }
+    async clear(key: string): Promise<any> {
+        return (await dbPromise).get('users', key);
+    }
+  }
+  export default new indexedDB();
+```
+
+## Configure State management with Vuex
+
+- **/store/index.ts** initialize Vuex and we tell Vue to use
+- **/store/state.ts** this file contained object, properties or model of data
+- **/store/actions.ts** create the methods that is invoked when the input content changes
+- **/store/mulations.ts** it is event handler to change state with type
+
+
+![App Screenshot](https://firebasestorage.googleapis.com/v0/b/task-force-45e4e.appspot.com/o/screens%2FScreen%20Shot%202021-07-22%20at%201.45.52%20PM.png?alt=media&token=e11fdae4-4959-4213-9a17-57bd12ee82e8)
 ## Screenshots
 
 ![App Screenshot](https://firebasestorage.googleapis.com/v0/b/task-force-45e4e.appspot.com/o/Screen%20Shot%202021-07-19%20at%2011.48.58%20PM.png?alt=media&token=bf7eb0b8-a530-46f6-ab6f-72ef0b0331dc)
@@ -148,6 +221,14 @@ npm install
 
 npm run serve
 ```
+
+## Conclusion
+### Why used Typescript, Bootstrap, Vuex, indexedDB ?
+- **TypeScript** One of the big benefits is to enable IDEs to provide a richer environment for spotting common errors as you type the code.
+- **Bootstrap** is the most popular UI framework supportted with many programming language. It simply to use and configure. For new **Vuejs** developer that have background with **HTML CSS** can start Bootstrap with **Vuejs**.
+- **Vuex** it is the state management of Vuejs, used to store and share centralize data or value.
+- **indexedDB** is the way to store data inside a user's browser.
+
 ## Authors
 
 - [@many-pichr](https://github.com/many-pichr)
