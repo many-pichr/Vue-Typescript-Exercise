@@ -9,22 +9,26 @@
       </div>
       <div class="modal-body">
        <div class="detail">
-         <img :src="detail.avatar_url" alt="Avatar" class="avatar">
+         <img :src="user.avatar_url" alt="Avatar" class="avatar">
          <div>
-          <label><strong>ID:</strong></label> {{detail.id}}
+          <label><strong>ID:</strong></label> {{user.id}}
         </div>
         <div>
-          <label><strong>Username:</strong></label> {{detail.login}}
+          <label><strong>Login:</strong></label> {{user.login}}
         </div>
         <div>
           <label><strong>Profile URL:</strong></label>
-          <a v-bind:href="detail.html_url">
-          {{detail.html_url}}
+          <a v-bind:href="user.html_url">
+          {{user.html_url}}
         </a>
         </div>
         <div>
           <label><strong>Follower:</strong></label>
-          {{follower}}
+          {{user.follower}}
+        </div>
+        <div>
+          <label><strong>Following:</strong></label>
+          {{user.following}}
         </div>
       </div>
       </div>
@@ -35,16 +39,18 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
-
+import { computed, defineComponent } from 'vue'
+import { useStore } from '@/store'
+import { MutationType } from '@/store/mutations'
 export default defineComponent({
-  name: "Modal",
-  props: {
-    title: String,
-    detail:Object,
-    follower: Number
-  },
-});
+  components: {  },
+  setup() {
+    const store = useStore()
+    const user = computed(() => store.state.user)
+  
+    return { user }
+  }
+})
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
@@ -69,5 +75,8 @@ a {
   height: 100px;
   border-radius: 50%;
   margin-bottom: 20px;
+}
+.detail {
+  text-align: left;
 }
 </style>
